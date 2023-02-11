@@ -1,10 +1,10 @@
 import config from './config';
-import {createClient, GroupMessage} from 'oicq';
+import {createClient, GroupMessageEvent} from 'oicq';
 import { Tasks} from './struct';
 import * as CMD from './command'
 const mainTask=new Tasks<{
   chatEvent:{
-    msg:GroupMessage
+    msg:GroupMessageEvent
   }
 }>();
 console.info("QQBot start")
