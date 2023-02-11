@@ -1,3 +1,4 @@
+/// <reference path="../typings/index.d.ts" />
 export type Class<T> = new(...args: any[]) => T;
 type events<T>={
   [Property in keyof T]:Array<(event:T[Property])=>void>;
@@ -5,6 +6,7 @@ type events<T>={
 export class Tasks<T>{
   private events:events<T>=<any>{}
   public on<K extends keyof T>(key:K,on:(event:T[K])=>void){
+    if(this.events[key]==null) this.events[key]=[];
     this.events[key].push(on);
   }
   public fire<K extends keyof T>(key:K,event:T[K]){

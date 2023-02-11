@@ -1,3 +1,5 @@
+
+/// <reference path="../typings/index.d.ts" />
 import config from './config';
 import {createClient, GroupMessageEvent} from 'oicq';
 import { Tasks} from './struct';
@@ -10,13 +12,19 @@ const mainTask=new Tasks<{
 console.info("QQBot start")
 
 const client=createClient(config.qq)
-
+if(config.asPassword){
 client.on("system.login.slider", function (e) {
   console.log("输入ticket：")
   process.stdin.once("data", ticket => this.submitSlider(String(ticket).trim()))
-}).login("password")
-
-client.on('message.groupp', e => {
+}).login(config.password)
+}else{
+  client.on("system.login.qrcode", function (e) {
+    process.stdin.once("data", () => {
+      this.login()
+    })
+  }).login()
+}
+client.on('message.group', e => {
   mainTask.fire('chatEvent',{msg:e});
 })
 

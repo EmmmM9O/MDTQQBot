@@ -1,3 +1,4 @@
+/// <reference path="../typings/index.d.ts" />
 import {GroupMessageEvent } from "oicq";
 import config from './config';
 export class command{
@@ -18,7 +19,7 @@ export class command{
 var commands=new Map<string,command>()
 export {commands}
 export function run(msg:GroupMessageEvent){
-  let str=msg.message.toString();
+  let str=msg.toString();
   if(!str.startsWith(config.startWith)) return ;
   let com=str.substring(config.startWith.length).split(' ');
   if(!commands.has(com[0])) return;
@@ -34,7 +35,7 @@ commands.set("帮助",new command(
       page=1;
     }
     if(page<=0
-      ||page>=Math.ceil(commands.size*1.0/8)){
+      ||page>Math.ceil(commands.size*1.0/8)){
         msg.reply("无效页码",true);
         return;
     }
@@ -51,8 +52,11 @@ commands.set("帮助",new command(
     }
     str+="---"+page+"/"+Math.ceil(commands.size*1.0/8);
     msg.reply(str);
-  }p
+  }
 ));
 commands.set("测试",new command(
-
+  "测试","只是测试","",
+  (m,n,msg)=>{
+    msg.reply("只是测试",true);
+  }
 ));
