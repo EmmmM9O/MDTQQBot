@@ -1,6 +1,7 @@
 /// <reference path="../typings/index.d.ts" />
 import {GroupMessageEvent } from "oicq";
 import config from './config';
+import Apis, { user } from "./Apis";
 export class command{
   public name:string='none';
   public addon:string='none';
@@ -14,6 +15,28 @@ export class command{
         this.name=name;this.addon=addon;
         this.run=run;this.decs=decs;
       }
+}
+export class moneyCommand extends command{
+  public constructor(name:string
+        ,decs:string,addon:string,
+    run:(m:string,n:Array<string>,msg:GroupMessageEvent,user:user)=>void
+    ){
+      super(name,decs,addon,
+        (m,n,msg)=>{
+          let from=msg.member['user_id'];
+          let res=Apis.mysql.query(from.toString());
+          if(typeof res=='string'){
+            msg.reply("出现错误!"+res,true);
+            return;
+          }
+          if(res.length<=0){
+            Apis.mysql.newUser(from.toString());
+            res=Apis.mysql.query(from.toString()); 
+          }
+          if(res.length<=0||typeof res=='string') return;
+          run(m,n,msg,res[0]);
+      })
+}
 }
 
 var commands=new Map<string,command>()
@@ -60,3 +83,9 @@ commands.set("测试",new command(
     msg.reply("只是测试",true);
   }
 ));
+commands.set("钱",new moneyCommand(
+  "钱","显示余额","",
+  (m,n,msg,user)=>{
+    msg.reply("余额"+user.money,true);
+  }
+))
