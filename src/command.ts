@@ -2,6 +2,7 @@
 import {GroupMessageEvent } from "oicq";
 import config from './config';
 import Apis, { user } from "./Apis";
+import { isDate } from "util";
 export class command{
   public name:string='none';
   public addon:string='none';
@@ -24,18 +25,25 @@ export class moneyCommand extends command{
       super(name,decs,addon,
         (m,n,msg)=>{
           let from=msg.member['user_id'];
-          let res=Apis.mysql.query(from.toString());
-          if(typeof res=='string'){
-            msg.reply("出现错误!"+res,true);
-            return;
-          }
-          if(res.length<=0){
-            Apis.mysql.newUser(from.toString());
-            res=Apis.mysql.query(from.toString()); 
-          }
-          if(res.length<=0||typeof res=='string') return;
-          run(m,n,msg,res[0]);
-      })
+          Apis.mysql.query(from.toString()
+          ,(res)=>{
+            if(res.length<=0){
+              Apis.mysql.newUser(from.toString(),()=>{
+                Apis.mysql.query(from.toString(),(res)=>{
+                  run(m,n,msg,res[0]);
+                },(err)=>{
+                  msg.reply("错误!"+err,true);
+                })
+              },(err)=>{
+                msg.reply("错误!"+err,true);
+              })
+            }else{
+              run(m,n,msg,res[0]);
+            }
+          },(err)=>{
+            msg.reply("错误！"+err,true);
+          })
+    });
 }
 }
 
@@ -70,7 +78,7 @@ commands.set("帮助",new command(
     for(let i=(page-1)*8;i<page*8;i++){
       let com=vs[i];
       if(com==null) continue;
-      str+=com.name+":"+com.addon+"\n"
+      str+=com.name+":"+com.addon+"\n简介:"
       +com.decs+"\n";
     }
     str+="---"+page+"/"+Math.ceil(commands.size*1.0/8);
@@ -83,9 +91,30 @@ commands.set("测试",new command(
     msg.reply("只是测试",true);
   }
 ));
-commands.set("钱",new moneyCommand(
-  "钱","显示余额","",
+commands.set("个人信息",new moneyCommand(
+  "个人信息","显示个人信息","",
   (m,n,msg,user)=>{
-    msg.reply("余额"+user.money,true);
+    msg.reply("用户"+user.user_id
+    +'\nQQ:'+user.qqid+'\n余额'+user.money,true);
   }
 ))
+commands.set("签到",new moneyCommand(
+  "签到","签到","",
+  (m,n,msg,user)=>{
+    let date=new Date(Date.parse(user.signData.replace(/-/g,   "/").split("T")[0]));
+    let k=new Date().getTime()-date.getTime();
+    let day=1000*60*60*24;
+    console.log(user.signData+'$$$'+date+"$$$"+k);
+    if(k<day*2){
+      msg.reply("你已经签到过了 还有"+(day*2-k)/1000/60/60+"小时");
+      return;
+    }
+    let rand=Math.floor(Math.random()*100+50);
+    Apis.mysql.sign(user.qqid,()=>{
+      msg.reply("签到成功"+rand,true);
+    },err=>{
+      msg.reply("错误!"+err,true);
+    },rand+user.money);
+  }
+))
+
